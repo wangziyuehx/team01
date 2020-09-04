@@ -15,29 +15,27 @@
                     icon="el-icon-delete"
                     class="handle-del mr10"
                     @click="delAllSelection"
-                >批量删除</el-button>
-                <el-select v-model="query.address" placeholder="地址" class="handle-select mr10">
-                    <el-option key="1" label="广东省" value="广东省"></el-option>
-                    <el-option key="2" label="湖南省" value="湖南省"></el-option>
+                >删除全部</el-button>
+                <el-select v-model="addressd" placeholder="地址"  class="handle-select mr10">
+                    <el-option v-for="(item,index) in addresslist" :key="index" :label="item.text" :value="item.text"></el-option>
+<!--                    <el-option key="2" label="当地" value="当地"></el-option>-->
                 </el-select>
                 <el-input v-model="name" placeholder="用户名" class="handle-input mr10" @input="getFundList($event)"></el-input>
                 <el-button type="primary" icon="el-icon-search" @click="handleSearch">搜索</el-button>
-<!--                <el-button type="primary" icon="el-icon-plus" @click="adds">添加</el-button>-->
+
             </div>
             <el-table
-                :data="tableData"
+                :data="tableData.slice((currpage - 1) * pagesize, currpage * pagesize)"
                 border
                 class="table"
                 ref="multipleTable"
                 header-cell-class-name="table-header"
                 @selection-change="handleSelectionChange"
+                @select-all="all"
             >
                 <el-table-column type="selection" width="55" align="center"></el-table-column>
                 <el-table-column prop="id" label="ID" width="55" align="center"></el-table-column>
                 <el-table-column prop="name" label="用户名"></el-table-column>
-                <el-table-column label="账户余额">
-                    <template slot-scope="scope">￥{{scope.row.money}}</template>
-                </el-table-column>
                 <el-table-column label="头像(查看大图)" align="center">
                     <template slot-scope="scope">
                         <el-image
@@ -47,8 +45,9 @@
                         ></el-image>
                     </template>
                 </el-table-column>
-                <el-table-column prop="address" label="地址"></el-table-column>
-                <el-table-column label="状态" align="center">
+                <el-table-column prop="address" label="家庭地址"></el-table-column>
+                <el-table-column prop="descibe" label="个人描述"></el-table-column>
+                <el-table-column label="核身状态" align="center">
                     <template slot-scope="scope">
                         <el-tag
                             :type="scope.row.state==='成功'?'success':(scope.row.state==='失败'?'danger':'')"
@@ -56,8 +55,7 @@
                     </template>
                 </el-table-column>
 
-                <el-table-column prop="date" label="注册时间"></el-table-column>
-<!--                <el-table-column label="注册时间"></el-table-column>-->
+                <el-table-column prop="date" label="创建时间"></el-table-column>
                 <el-table-column label="操作" width="180" align="center">
                     <template slot-scope="scope">
                         <el-button
@@ -75,14 +73,24 @@
                 </el-table-column>
             </el-table>
             <div class="pagination">
-                <el-pagination
-                    background
-                    layout="total, prev, pager, next"
-                    :current-page="query.pageIndex"
-                    :page-size="query.pageSize"
-                    :total="pageTotal"
-                    @current-change="handlePageChange"
-                ></el-pagination>
+<!--                <el-pagination-->
+<!--                    background-->
+<!--                    layout="total, prev, pager, next"-->
+<!--                    :current-page="query.pageIndex"-->
+<!--                    :page-sizes="[10, 15, 20]"-->
+<!--                    :total="pageTotal"-->
+<!--                    @current-change="handlePageChange"-->
+<!--                ></el-pagination>-->
+
+                <el-pagination background
+                  layout="prev, pager, next, sizes, total, jumper"
+                   :page-sizes="[5, 10, 15, 20]"
+                :page-size="pagesize"
+                :total="tableData.length"
+                @current-change="handleCurrentChange"
+                @size-change="handleSizeChange"
+                >
+                </el-pagination>
             </div>
         </div>
 
@@ -93,8 +101,8 @@
                 <el-form-item label="用户名">
                     <el-input v-model="form.name"></el-input>
                 </el-form-item>
-                <el-form-item label="账户余额">
-                    <el-input v-model="form.money"></el-input>
+                <el-form-item label="个人描述">
+                    <el-input v-model="form.descibe"></el-input>
                 </el-form-item>
                 <el-form-item label="地址">
                     <el-input v-model="form.address"></el-input>
@@ -110,7 +118,8 @@
 
 <script>
 import { fetchData } from '../../api/index';
-import httplist from '@/utils/prots'
+// import httplist from '@/utils/prots'
+import {login,picurl,index, change,infoname,del,delall,dealt,deldealt,adddealt,changedealt,img,add} from '../../api/index';
 function rTime(date) {
     var json_date = new Date(date).toJSON();
     return new Date(new Date(json_date) + 8 * 3600 * 1000).toISOString().replace(/T/g, ' ').replace(/\.[\d]{3}Z/, '')
@@ -119,6 +128,7 @@ export default {
     name: 'basetable',
     data() {
         return {
+            userid:localStorage.getItem('userid'),
             picurl:'',
             name:'',
             query: {
@@ -127,6 +137,31 @@ export default {
                 pageIndex: 1,
                 pageSize: 10
             },
+
+            addresslist:[{
+                text:'贵阳'
+            },{
+                text:'上海'
+            },{
+                text:'北京'
+            },{
+                text:'深圳'
+            },{
+                text:'广东'
+            },{
+                text:'浙江'
+            },{
+                text:'广西'
+            },{
+                text:'四川'
+            },{
+                text:'陕西'
+            }],
+
+            pagesize: 10,
+            currpage: 1,
+            addressd:'',
+
             tableData: [],
             multipleSelection: [],
             delList: [],
@@ -134,40 +169,33 @@ export default {
             pageTotal: 0,
             form: {},
             idx: -1,
-            id: -1
+            id: -1,
+            allselect:false
         };
     },
+    // mounted(){
+    //     this.test();
+    // },
     created() {
-        console.log(httplist)
-        var list = httplist
-        this.picurl = list.picurl
-        this.getData();
         this.test();
     },
     methods: {
         test() {
             var that = this
-            var list = httplist.manage
-            var picurl = httplist.picurl
-            this.axios.post('api'+list.index).then(function (res) {
+           index({
+               userid:that.userid
+           }).then(function (res) {
                 console.log(res)
                 var list = res.data.admin
                 for (var i = 0;i<list.length;i++) {
                     var piclist = picurl+list[i].thumb
                     list[i].thumb = piclist
-                   var time = rTime(list[i].date)
-                    list[i].date = time
+
                 }
                 that.tableData = list
             })
                  },
-        getData() {
-            fetchData(this.query).then(res => {
-                // console.log(res);
-                // this.tableData = res.list;
-                // this.pageTotal = res.pageTotal || 50;
-            });
-        },
+
         getFundList($event){
             if($event==''){
                 this.test()
@@ -176,28 +204,44 @@ export default {
         // 触发搜索按钮
         handleSearch() {
            var that = this
-            console.log(this.name)
-            var list = httplist.manage
-            this.axios.post('api'+list.infoname+'?name='+this.name).then((res)=>{
+            infoname({
+                name:this.name,
+                address:this.addressd,
+                userid:that.userid
+            }).then((res)=>{
                 console.log(res);
-                that.tableData = res.data.result
+                var list = res.data.admin
+                for (var i = 0;i<list.length;i++) {
+                    var piclist = picurl+list[i].thumb
+                    list[i].thumb = piclist
+
+                }
+                that.tableData = list
             });
         },
         // 删除操作
         handleDelete(index, row) {
             var that = this
             console.log(row)
-            var id = row.id
+            var caseid = row.caseid
             // 二次确认删除
             this.$confirm('确定要删除吗？', '提示', {
                 type: 'warning'
-            })
-                .then(() => {
-                    this.$message.success('删除成功');
-                    this.tableData.splice(index, 1);
-                    var list = httplist.manage
-                    this.axios.post('api'+list.del+'?id='+id).then((res)=>{
+            }).then(() => {
+
+                    del({
+                        caseid:caseid
+                    }).then((res)=>{
                         console.log(res);
+                        if(res.data.status==true){
+                            this.$message.success('删除成功');
+                            this.tableData.splice(index, 1);
+                            if(this.tableData.length==0){
+                                delall({}).then((response)=>{});
+                            }
+                        }else {
+                            this.$message.success('操作失败');
+                        }
 
                     });
                 })
@@ -205,17 +249,31 @@ export default {
         },
         // 多选操作
         handleSelectionChange(val) {
+            console.log(val)
             this.multipleSelection = val;
         },
+        all(){
+          console.log('全选')
+            this.allselect = true
+        },
+
         delAllSelection() {
-            const length = this.multipleSelection.length;
-            let str = '';
-            this.delList = this.delList.concat(this.multipleSelection);
-            for (let i = 0; i < length; i++) {
-                str += this.multipleSelection[i].name + ' ';
+          var pan =this.allselect
+            if(pan==true){
+                delall({
+                    userid:this.userid
+                }).then((response)=>{
+                    if(response.data.status==true){
+                        this.$message.success('删除成功');
+                        this.test();
+                    }else {
+                        this.$message.success('操作失败');
+                    }
+                });
+            }else {
+                this.$message.success('请勾选所有内容');
             }
-            this.$message.error(`删除了${str}`);
-            this.multipleSelection = [];
+
         },
         // 编辑操作
         handleEdit(index, row) {
@@ -231,31 +289,40 @@ export default {
             this.$message.success(`修改第 ${this.idx + 1} 行成功`);
             this.$set(this.tableData, this.idx, this.form);
 
-            var list = httplist.manage
-            this.axios.post('api'+list.change+"?id="+this.form.id+'&name='+this.form.name+'&money='+this.form.money+'&address='+this.form.address
-            ).then((response)=>{
+            change({
+
+                    caseid:this.form.caseid,
+                    name:this.form.name,
+                    descibe:this.form.descibe,
+                    address:this.form.address
+
+            }).then((response)=>{
                 console.log('修改成功');
                 console.log(response);
             });
-
-            // this.axios.post('api'+list.change,{
-            //     params:{
-            //         id:this.form.id,
-            //         name:this.form.name,
-            //         money:this.form.money,
-            //         address:this.form.address
-            //     }
-            // }).then((response)=>{
-            //     console.log('修改成功');
-            //     console.log(response);
-            // });
         },
         // 分页导航
-        handlePageChange(val) {
-            this.$set(this.query, 'pageIndex', val);
-            this.getData();
+        // handlePageChange(val) {
+        //     this.$set(this.query, 'pageIndex', val);
+        //     this.getData();
+        // }
+
+
+
+        handleCurrentChange(val) {
+
+            this.currpage = val;
+        },
+        handleSizeChange(val) {
+
+            this.pagesize = val;
+        },
+    },
+    watch:{
+        $route(){
+            this.test();
         }
-    }
+    },
 };
 </script>
 

@@ -28,7 +28,8 @@
 </template>
 
 <script>
-    import httplist from '@/utils/prots'
+    // import httplist from '@/utils/prots'
+     import {login,picurl,index, change,infoname,del,dealt,deldealt,adddealt,changedealt,img,add} from '../../api/index';
 export default {
     data: function() {
         return {
@@ -47,23 +48,21 @@ export default {
             var that = this
             if(this.param.username){
                 if(this.param.password){
-                    var list = httplist.manage
-
-                    this.axios.get('api'+list.login,{
-                        params:{
+                    login({
                             account:this.param.username,
                             password:this.param.password
-                        }
                     }).then((res)=>{
                         console.log(res);
                         var mes = res.data.mes
-                        var pic = httplist.picurl+res.data.pic
+                        var pic = picurl+res.data.pic
+                        var userid = res.data.userid
                         // console.log(mes)
                         if(res.data.statu == true){
                             console.log('登陆成功')
                             this.$message.success('登录成功');
                             localStorage.setItem('ms_username', this.param.username);
                             localStorage.setItem('userimg', pic);
+                            localStorage.setItem('userid', userid);
                             this.$router.push('/index');
                         }else {
                             that.$message.success(mes);

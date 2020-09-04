@@ -110,9 +110,7 @@
                 <el-form-item label="待办事项">
                     <el-input v-model="title"></el-input>
                 </el-form-item>
-                <el-form-item label="待办状态">
-                    <el-input v-model="status"></el-input>
-                </el-form-item>
+
             </el-form>
             <span slot="footer" class="dialog-footer">
                 <el-button @click="editVisible = false">取 消</el-button>
@@ -125,18 +123,19 @@
 <script>
 import Schart from 'vue-schart';
 import bus from '../common/bus';
-import httplist from '@/utils/prots'
+// import httplist from '@/utils/prots'
+import {login,picurl,index, change,infoname,del,dealt,deldealt,adddealt,changedealt,img,add} from '../../api/index';
 export default {
     name: 'dashboard',
     data() {
         return {
             name: localStorage.getItem('ms_username'),
             pic:localStorage.getItem('userimg'),
+            userid:localStorage.getItem('userid'),
             todoList: [],
             maintitle:'2',
             editVisible: false,
             title:'',
-            status:'',
             form:'',
             data: [
                 {
@@ -217,8 +216,9 @@ export default {
         Schart,
     },
     created(){
-        var list = httplist.manage
-        this.axios.post('api'+list.dealt).then((res)=>{
+        dealt({
+            userid:this.userid
+        }).then((res)=>{
             console.log(res);
             this.todoList = res.data.dealt
         });
@@ -250,8 +250,9 @@ export default {
         delpro(index, row){
             console.log(row)
             var id = row.id
-            var list = httplist.manage
-            this.axios.post('api'+list.deldealt+'?id='+id).then((res)=>{
+            deldealt({
+                id:id
+            }).then((res)=>{
                 console.log(res);
                 if(res.data.status == true){
                     this.todoList .splice(index, 1);
@@ -269,17 +270,19 @@ export default {
         },
 // 添加
 saveEdit() {
-    var list = httplist.manage
     var mes = this.maintitle
 
     if(mes=='添加待办事项'){
         console.log('添加待办事项')
-        this.axios.post('api'+list.adddealt+'?title='+this.title+'&status='+this.status).then((res)=>{
+        adddealt({
+            title:this.title,
+            userid:this.userid
+        }).then((res)=>{
             console.log(res);
             if(res.data.status ==true){
                 this.editVisible = false;
                 this.$message.success(`添加成功`);
-                this.axios.post('api'+list.dealt).then((res)=>{
+                dealt({ userid:this.userid}).then((res)=>{
                     this.todoList = res.data.dealt
                 });
             }
@@ -287,12 +290,12 @@ saveEdit() {
     }else {
         console.log('修改待办事项')
         var id = this.form.id
-        this.axios.post('api'+list.changedealt+'?id='+id+'&title='+this.title+'&status='+this.status).then((res)=>{
+        changedealt({id:id,title:this.title,userid:this.userid}).then((res)=>{
             console.log(res)
             if(res.data.status ==true){
                 this.editVisible = false;
                 this.$message.success(`修改成功`);
-                this.axios.post('api'+list.dealt).then((res)=>{
+                dealt({ userid:this.userid}).then((res)=>{
                     this.todoList = res.data.dealt
                 });
             }

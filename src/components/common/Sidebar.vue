@@ -67,18 +67,13 @@ export default {
                     title: '用户信息'
                 },
                 {
-                    icon: 'el-icon-document-copy',
-                    index: 'tabs',
-                    title: '系统信息'
-                },
-                {
                     icon: 'el-icon-s-order',
                     index: '3',
                     title: '信息填写',
                     subs: [
                         {
                             index: 'form',
-                            title: '基本表单'
+                            title: '用户信息添加'
                         },
                         {
                             index: '3-2',
@@ -100,6 +95,12 @@ export default {
                         }
                     ]
                 },
+                {
+                    icon: 'el-icon-document-copy',
+                    index: 'tabs',
+                    title: '系统信息'
+                },
+
                 {
                     icon: 'el-icon-bangzhu',
                     index: 'icon',

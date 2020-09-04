@@ -9,7 +9,12 @@ export default {
     deldealt:'/deldealt',//删除待办事项
     adddealt:'/adddealt',//添加待办事项
     changedealt:'/changedealt',//修改待办事项
-    img:'/upload',//图片上传
+    img:'/upload',//图片上传,
+    add:'/add',//用户添加
   },
-  picurl:'http://192.168.3.50:8888'
+  // picurl:'http://192.168.3.139:8888',//本地的
+  picurl:'http://139.224.129.91',//线上地址
+  // picurl:'http://www.carrishx.com'
+
+
 }

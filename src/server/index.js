@@ -3,7 +3,11 @@ const express = require('express')
 const mysql = require('mysql');
 const sql = require('./sqlMap');//sql语句
 const app = express();
+const multer = require('multer')
+
 app.use(express.static('public'));
+app.use(express.static('dist'));
+
 
 app.all('*', function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
@@ -17,80 +21,18 @@ app.all('*', function(req, res, next) {
 var server = require('http').createServer(app);
 var conn = mysql.createConnection(db.mysql);
 conn.connect ()
+conn.on('error',err=>{
+    console.log('Re-connecting lost connection: ');
+   var conn = mysql.createConnection(db.mysql)
+    conn.connect ()
+})
 
-// 查看新闻列表
-app.post('/newslist', function(req, res) {
-    let sqlStr = sql.user.newslist;
-    // let conn = new DBHelper().getConn();
-    conn.query(sqlStr, function(err, result) {
-        if (err) {
-            res.json({
-                message:'查询失败',
-                is:err,
-            });
-        }else {
-            res.json({
-                message:' 查询成功',
-                list: result,
-            })
-        }
-    });
-});
 // 多表查询整个列表
-var list1 = []
-var list2 = []
-var list3 = []
-var list4 = []
-var list5 = []
+
 app.post('/index', (req, res) => {
     let admin = sql.user.all
-
-    // // 请求显示新闻列表
-    // conn.query(news, (err, result) => {
-    //     if (err) {
-    //         res.json({
-    //             message:'查询失败',
-    //             is:err,
-    //         });
-    //     }else {
-    //         list3 = result
-    //     }
-    // });
-    // // 请求显示赛事列表
-    // conn.query(event, (err, result) => {
-    //     if (err) {
-    //         res.json({
-    //             message:'查询失败',
-    //             is:err,
-    //         });
-    //     }else {
-    //         list4 = result
-    //     }
-    // });
-    // // 请求显示活动列表
-    // conn.query(active, (err, result) => {
-    //     if (err) {
-    //         res.json({
-    //             message:'查询失败',
-    //             is:err,
-    //         });
-    //     }else {
-    //         list5 = result
-    //     }
-    // });
-    // // 请求获取图片列表
-    // conn.query(sqlStr, (err, result) => {
-    //     if (err) {
-    //         res.json({
-    //             message:'查询失败',
-    //             is:err,
-    //         });
-    //     }else {
-    //         list2 = result
-    //     }
-    // });
-    // 请求获取个人信息列表
-    conn.query(admin, (err, result) => {
+    let params = req.query;
+    conn.query(admin,[params.userid], (err, result) => {
         if (err) {
             res.json({
                 message:'查询失败',
@@ -98,6 +40,11 @@ app.post('/index', (req, res) => {
             });
         }else {
             list1 = result
+            for (var i=0;i<list1.length;i++) {
+                if(list1[i].id!==1){
+                    list1[i].id = i+1
+                }
+            }
             res.json({
                 success_code: 200,
                 mes:'查询成功',
@@ -108,37 +55,60 @@ app.post('/index', (req, res) => {
     });
 });
 
-// 根据商品名称查询商品
-app.post('/goods', function(req, res){
-    let sqlStr = sql.user.select;
+// 根据姓名或者地址查询
+app.post('/infoname', function(req, res){;
+    let admin = sql.user.all
     let params = req.query;
-    console.log(req)
-    conn.query(sqlStr, [params.goods_id], (err, result) => {
+    conn.query(admin,[params.userid], (err, result) => {
         if (err) {
-            res.json(err);
+            res.json({
+                message:'查询失败',
+                is:err,
+            });
         }else {
-            res.json({result})
-        }
-    });
-});
+            list1 = result
+            for (var i=0;i<list1.length;i++) {
+                if(list1[i].id!==1){
+                    list1[i].id = i+1
+                }
+            }
+            var searchlist = []
+            for (var a = 0;a<list1.length;a++){
+                if(params.name){
+                    if(list1[a].name.indexOf(params.name) != -1){
+                        var mes = '查询成功'
+                        searchlist.push(list1[a])
+                    }
+                }else if(params.address){
+                    if(list1[a].address.indexOf(params.address) != -1){
+                        var mes = '查询成功'
+                        searchlist.push(list1[a])
+                    }
+                }else {
+                    if(list1[a].name.indexOf(params.name) != -1 && list1[a].address.indexOf(params.address) != -1){
+                        var mes = '查询成功'
+                        searchlist.push(list1[a])
+                    }
+                }
 
-// 根据姓名查询
-app.post('/infoname', function(req, res){
-    let sqlStr = sql.user.select;
-    let params = req.query;
-    conn.query(sqlStr, [params.name], (err, result) => {
-        if (err) {
-            res.json(err);
-        }else {
-            res.json({result})
+
+
+              }
+            res.json({
+                success_code: 200,
+                mes:mes,
+                admin:searchlist,
+
+            })
         }
     });
+
 });
-// 根据id修改
+// 根据caseid修改
 app.post('/changeinfo', function(req, res){
     let sqlStr = sql.user.update;
     let params = req.query;
-    conn.query(sqlStr,[params.name,params.money,params.address,params.id], (err, result) => {
+    conn.query(sqlStr,[params.name,params.descibe,params.address,params.caseid], (err, result) => {
         if (err) {
             res.json(err);
         }else {
@@ -149,15 +119,18 @@ app.post('/changeinfo', function(req, res){
         }
     });
 });
-// 根据id删除
-app.post('/delinfo', function(req, res){
+// 根据caseid删除
+app.post('/del', function(req, res){
     let sqlStr = sql.user.del;
     let params = req.query;
-    conn.query(sqlStr, [params.id], (err, result) => {
+    conn.query(sqlStr, [params.caseid], (err, result) => {
         if (err) {
             res.json(err);
         }else {
-            res.json({result})
+            res.json({
+                mes:'删除成功',
+                status:true
+            })
         }
     });
 });
@@ -175,37 +148,79 @@ app.get('/login',function (req,res) {
         if (err) {
             res.json(err);
         }else {
-            list = result
+           list = result
+
         }
+
     });
     var  addSqlParams = [req.query.account,req.query.password];
     conn.query(selectSQL,addSqlParams,function (err, result) {
         if(err){
             return;
-        }
-        if(result=='')
-        { res.json({
-            mes:'帐号密码错误',
-            statu:0
-        })
-        }
-        else
-        {
-            res.json({
-                mes:'登录成功',
-                pic:list[0].pic,
-                statu:true
-            })
+        }else {
+
+            if(list.length>0 && result.length>0){
+                if(list.account==result.account){
+                    if(list.password==result.password){
+                            res.json({
+                                mes:'登录成功',
+                                pic:list[0].pic,
+                                statu:true,
+                                userid:list[0].userid
+                            })
+
+                    }else {
+                        res.json({
+                            mes:'密码错误',
+                            statu:0
+                        })
+                    }
+                }else {
+                    res.json({
+                        mes:'帐号错误',
+                        statu:0
+                    })
+                }
+            }else {
+                res.json({
+                    mes:'帐号或密码错误',
+                    statu:0
+                })
+            }
 
         }
+
     });
 
 })
+
+// 验证码登陆
+app.post('/codelogin', function(req, res){
+    let sqlStr = "select account from user where account = '"+req.query.account+"'"
+    let params = req.query;
+
+    conn.query(sqlStr, [params.account ], (err, result) => {
+        if(params.code=='5050215'){
+            res.json({
+                mes:'查询成功',
+                status:true
+            })
+        }else {
+            res.json({
+                mes:err,
+                status:0
+            })
+        }
+
+    });
+});
+
 // 待办事项
 
 app.post('/dealt', function(req, res) {
     let sqlStr = sql.user.dealt;
-    conn.query(sqlStr, function(err, result) {
+    let params = req.query;
+    conn.query(sqlStr, [params.userid],function(err, result) {
         if (err) {
             res.json({
                 message:'查询失败',
@@ -215,6 +230,25 @@ app.post('/dealt', function(req, res) {
             res.json({
                 message:' 查询成功',
                 dealt: result,
+            })
+        }
+    });
+});
+//发送验证码
+app.get('/sendcode', function(req, res){
+    let params = req.query;
+    conn.query((err, result) => {
+        if(params.phone=='18385300473'){
+            res.json({
+                mes:'验证码发送成功',
+                code:'5050215',
+                status:1
+            })
+        }else {
+            res.json({
+                mes:'验证码发送失败',
+                code:'',
+                status:0
             })
         }
     });
@@ -241,7 +275,7 @@ app.post('/deldealt', function(req, res){
 app.post('/adddealt', function(req, res){
     let sqlStr = sql.user.adddealt;
     let params = req.query;
-    conn.query(sqlStr, [params.title,params.status], (err, result) => {
+    conn.query(sqlStr, [params.title,params.userid], (err, result) => {
         if (err) {
             res.json(err);
         }else {
@@ -259,8 +293,7 @@ app.post('/changedealt', function(req, res){
     let params = req.query;
     let num = params.id
     let idnum = parseInt(num)
-    console.log(typeof (idnum))
-    conn.query(sqlStr, [params.title,params.status,idnum], (err, result) => {
+    conn.query(sqlStr, [params.title,params.userid,idnum], (err, result) => {
         if (err) {
             res.json(err);
         }else {
@@ -272,315 +305,55 @@ app.post('/changedealt', function(req, res){
     });
 });
 
-//添加图片的
-
-// 购物车
-
-
-app.post('/cart/list', function(req, res) {
-    let sqlStr = sql.user.cartlist;
-    conn.query(sqlStr, function(err, result) {
-        if (err) {
-            res.json({
-                message:'查询失败',
-                is:err,
-            });
-        }else {
-            res.json({
-                message:' 查询成功',
-                cartlist: result,
-
-            })
-        }
-    });
-});
-// 删除购物车列表
-app.post('/cart/delete', function(req, res){
-    let sqlStr = sql.user.dellist;
-    let params = req.query;
-    console.log(params)
-    conn.query(sqlStr, [params.goods_id], (err, result) => {
-        if (err) {
-            res.json(err);
-        }else {
-            res.json({mes:'ok'})
-        }
-    });
-});
-
-// 增加商品
-app.post('/cart/add', function(req, res){
-    let sqlStr = sql.user.addlist;
-    let params = req.query;
-    conn.query(sqlStr, [params.goods_id,params.goods_name,params.goods_title,params.goods_price,params.goods_price_yh,
-            params.goods_count,params.goods_pic], (err, result) => {
-        if (err) {
-            res.json(err);
-        }else {
-            res.json({
-                result:1,
-                message:'添加成功'
-            })
-        }
-    });
-});
-// 个人中心页面
-var d_fk = 1
-var  d_fh = 1
-var d_sh = 1
-var d_pj = 0
-app.post('/center', function(req, res){
-    res.json({
-        count:{'d_fk':d_fk,'d_fh':d_fh,'d_sh':d_sh,'d_pj':d_pj},
-        message:'请求成功'
-    })
-});
-
-// 订单管理
-var dfk = []
-var dsh = []
-var dfh = []
-var orderlist=[]
-app.post('/orderlist', function(req, res){
-    let sqlStr1 = sql.user.dfk;
-    let sqlStr2 = sql.user.dfh;
-    let sqlStr3 = sql.user.dsh;
-    let sqlStr4 = sql.user.orderlist;
-    conn.query(sqlStr1,  (err, result) => {
-        if (err) {
-            res.json(err);
-        }else {
-            dfk = result
-        }
-    });
-    conn.query(sqlStr2,  (err, result) => {
-        if (err) {
-            res.json(err);
-        }else {
-            dfh = result
-        }
-    });
-    conn.query(sqlStr3,  (err, result) => {
-        if (err) {
-            res.json(err);
-        }else {
-            dsh = result
-        }
-    });
-    conn.query(sqlStr4,  (err, result) => {
-        if (err) {
-            res.json(err);
-        }else {
-            orderlist = result
-        }
-    });
-    // 最后的结果
-    res.json({
-        mes:'ok',
-        dfk:dfk,
-        dfh: dfh,
-        dsh:dsh,
-        orderlist:orderlist,
-
-    })
-
-});
-
-// 删除待付款的商品
-app.post('/order/delete', function(req, res){
-    let sqlStr = sql.user.del_order;
-    let params = req.query;
-    console.log(params)
-    conn.query(sqlStr, [params.order_id], (err, result) => {
-        if (err) {
-            res.json(err);
-        }else {
-            res.json({mes:'ok'})
-        }
-    });
-});
-
-// 根据id查询
-var payWay=[{'name':'微信支付'},{'name':'健康币支付'},{'name':'其他'}]
-// var order ={express_name:'贵州省贵阳市'}
-app.post('/orderpro', function(req, res){
-    let sqlStr1 = sql.user.order1;
-    let sqlStr2 = sql.user.order2;
-    let sqlStr3 = sql.user.order3;
-    let sqlStr4 = sql.user.orderlist1
-    let params = req.query;
-    console.log(params)
-
-        conn.query(sqlStr4,  [params.order_id], (err, result) => {
-            if (err) {
-                res.json(err);
-            }else {
-                res.json({
-                    orderpro:result,
-                    payway:payWay,
-                })
-            }
-        });
-
-
-});
-
-// 地址显示
-app.post('/address/list', function(req, res){
-    let sqlStr = sql.user.address;
-    conn.query(sqlStr,  (err, result) => {
-        if (err) {
-            res.json(err);
-        }else {
-            res.json({
-                mes:1,
-                addrlist:result
-            })
-        }
-    });
-});
-// 编辑地址的
-app.post('/center/address/info', function(req, res){
-    let sqlStr = sql.user.address_id;
-    let params = req.query;
-    conn.query(sqlStr,  [params.address_id], (err, result) => {
-        if (err) {
-            res.json(err);
-        }else {
-            res.json({
-                info:result
-            })
-        }
-    });
-});
-
-// 订单详情
-// 根据id查询
-var payWay=[{'name':'微信支付',bianma:'pay_wx'},{'name':'健康币支付',bianma:'pay_jkb'}]
-// var order ={express_name:'贵州省贵阳市'}
-app.post('/ding', function(req, res){
-    let ding = sql.user.ding
-    let params = req.query;
-    console.log(params)
-
-    conn.query(ding,[params.goods_id], (err, result) => {
-        if (err) {
-            res.json(err);
-        }else {
-            res.json({
-                ding:result,
-                payway:payWay,
-            })
-        }
-    });
-
-
-});
-
-// 提交订单操作
-app.post('/orderit', function(req, res){
-    let addit = sql.user.addorder
-    let params = req.query;
-    console.log(params)
-
-    conn.query(addit,[params.goods_pic,params.goods_name,params.goods_title,params.goods_price,params.goods_price_sy,params.goods_price_yh,params.goods_count,params.goods_total,params.order_total,params.status,params.goods_id], (err, result) => {
-        if (err) {
-            res.json(err);
-        }else {
-            res.json({
-                result,
-
-            })
-        }
-    });
-
-
-});
-// 收藏列表
-app.post('/collection/list', function(req, res){
-    let sclist = sql.user.scit
-    conn.query(sclist, (err, result) => {
-        if (err) {
-            res.json(err);
-        }else {
-            res.json({
-                list:result,
-
-            })
-        }
-    });
-
-
-});
-// 点击收藏
-app.post('/collection/add', function(req, res){
-    let addit = sql.user.collection
-    let params = req.query;
-    console.log(params)
-    conn.query(addit,[params.goods_name,params.goods_pic,params.goods_price_yh,params.goods_price_sy,params.goods_price,params.goods_id,params.goods_title,params.detail,params.goods_remaining], (err, result) => {
-        if (err) {
-            res.json(err);
-        }else {
-            res.json({
-                result,
-            })
-        }
-    });
-
-
-});
-// 根据id删除
-app.post('/collection/delete', function(req, res){
-    let delit = sql.user.delit
-    let params = req.query;
-    console.log(params)
-    conn.query(delit,[params.id], (err, result) => {
-        if (err) {
-            res.json(err);
-        }else {
-            res.json({
-                result,
-            })
-        }
-    });
-
-
-});
-// 查询洗漱用品
-app.post('/goodfl', function(req, res){
-    let xishu = sql.user.xishu
-    let shousi = sql.user.shousi
-    let params = req.query;
-    console.log(params)
-    if(params.category_name=="首饰类"){
-        conn.query(shousi,(err, result) => {
-            if (err) {
-                res.json(err);
-            }else {
-                res.json({
-                    goods:result,
-                })
-            }
-        });
-    }else {
-        conn.query(xishu,(err, result) => {
-            if (err) {
-                res.json(err);
-            }else {
-                res.json({
-                    goods:result,
-                })
-            }
-        });
+//添加图片到指定的文件进行存储
+var storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'public/img/')
+        //文件保存路径
+    },
+    filename: function (req, file, cb) {
+        cb(null, file.originalname)
     }
+})
+var upload = multer({storage: storage})
+app.post('/uploader', upload.single('file'), function (req, res, next) {
+    //定义接口
+    // console.log(req.file)
+    res.send('/img/'+req.file.filename)
+})
 
-
-
-
+// 添加用户信息
+app.post('/add', function(req, res){
+    let sqlStr = sql.user.add;
+    let params = req.query;
+    conn.query(sqlStr, [params.name,params.userid,params.state,params.thumb,params.date,params.address,params.describe], (err, result) => {
+        if (err) {
+            res.json(err);
+        }else {
+            res.json({
+                mes:'添加成功',
+                status:true
+            })
+        }
+    });
 });
+// 删除所有表格数据
+app.post('/delall', function(req, res){
+    let sqlStr = sql.user.delall;
+    let params = req.query;
+    conn.query(sqlStr, [params.userid],(err, result) => {
+        if (err) {
+            res.json(err);
+        }else {
+            res.json({
+                mes:'删除所有成功',
+                status:true
+            })
+        }
+    });
+});
+
 app.listen(8888, () => {
-    // console.log('Server running at http://192.168.0.118:8888');
-    // 自己手机的
-    console.log('Server running at http://192.168.3.50:8888');
+    console.log('Server running at http://192.168.1.104');
 })
 

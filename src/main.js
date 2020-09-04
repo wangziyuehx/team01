@@ -14,6 +14,14 @@ import global from './api/global.js'
 
 Vue.config.productionTip = false;
 Vue.prototype.axios = axios
+// 环境的切换
+console.log(process.env.NODE_ENV)
+if (process.env.NODE_ENV === 'development') {
+
+    axios.defaults.baseURL = 'api';
+} else if (process.env.NODE_ENV === 'production') {
+    axios.defaults.baseURL = 'http://139.224.129.91';
+}
 Vue.use(VueI18n);
 Vue.use(global)
 Vue.use(ElementUI, {
