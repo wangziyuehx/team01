@@ -73,7 +73,7 @@ export default {
                     subs: [
                         {
                             index: 'form',
-                            title: '用户信息添加'
+                            title: '添加'
                         },
                         {
                             index: '3-2',
@@ -102,9 +102,9 @@ export default {
                 },
 
                 {
-                    icon: 'el-icon-bangzhu',
+                    icon: 'el-icon-user-solid',
                     index: 'icon',
-                    title: '自定义图标'
+                    title: '账户信息'
                 },
                 {
                     icon: 'el-icon-pie-chart',

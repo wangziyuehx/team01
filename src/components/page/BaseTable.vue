@@ -47,26 +47,25 @@
                 </el-table-column>
                 <el-table-column prop="address" label="家庭地址"></el-table-column>
                 <el-table-column prop="descibe" label="个人描述"></el-table-column>
-                <el-table-column label="核身状态" align="center">
-                    <template slot-scope="scope">
-                        <el-tag
-                            :type="scope.row.state==='成功'?'success':(scope.row.state==='失败'?'danger':'')"
-                        >{{scope.row.state}}</el-tag>
-                    </template>
-                </el-table-column>
+                <el-table-column prop="email" label="邮箱" align="center"> </el-table-column>
 
                 <el-table-column prop="date" label="创建时间"></el-table-column>
                 <el-table-column label="操作" width="180" align="center">
                     <template slot-scope="scope">
                         <el-button
-                            type="text"
-                            icon="el-icon-edit"
+                                type="text"
+                                icon="el-icon-edit"
                             @click="handleEdit(scope.$index, scope.row)"
                         >编辑</el-button>
                         <el-button
-                            type="text"
-                            icon="el-icon-delete"
-                            class="red"
+                                type="text"
+                                icon="el-icon-share"
+                                @click="sendmes(scope.$index, scope.row)"
+                        >发邮件</el-button>
+                        <el-button
+                                type="text"
+                                icon="el-icon-delete"
+                                 class="red"
                             @click="handleDelete(scope.$index, scope.row)"
                         >删除</el-button>
                     </template>
@@ -119,7 +118,7 @@
 <script>
 import { fetchData } from '../../api/index';
 // import httplist from '@/utils/prots'
-import {login,picurl,index, change,infoname,del,delall,dealt,deldealt,adddealt,changedealt,img,add} from '../../api/index';
+import {picurl,index, change,infoname,del,delall,sendemail} from '../../api/index';
 function rTime(date) {
     var json_date = new Date(date).toJSON();
     return new Date(new Date(json_date) + 8 * 3600 * 1000).toISOString().replace(/T/g, ' ').replace(/\.[\d]{3}Z/, '')
@@ -301,13 +300,20 @@ export default {
                 console.log(response);
             });
         },
-        // 分页导航
-        // handlePageChange(val) {
-        //     this.$set(this.query, 'pageIndex', val);
-        //     this.getData();
-        // }
-
-
+        // 发送邮箱
+       sendmes(index, row) {
+            console.log(row)
+           var emails = row.email
+           sendemail({
+               userid:this.userid,
+               email:emails
+           }).then((response)=>{
+               console.log(response);
+               if(response.data.status==true){
+                   this.$message.success(`邮件发送成功`);
+               }
+           });
+        },
 
         handleCurrentChange(val) {
 
@@ -355,4 +361,5 @@ export default {
     width: 40px;
     height: 40px;
 }
+
 </style>

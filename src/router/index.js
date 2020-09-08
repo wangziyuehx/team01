@@ -27,7 +27,7 @@ export default new Router({
                 {
                     path: '/icon',
                     component: () => import(/* webpackChunkName: "icon" */ '../components/page/Icon.vue'),
-                    meta: { title: '自定义图标' }
+                    meta: { title: '账户信息' }
                 },
                 {
                     path: '/table',

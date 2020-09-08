@@ -3,6 +3,7 @@ const express = require('express')
 const mysql = require('mysql');
 const sql = require('./sqlMap');//sql语句
 const app = express();
+var nodemailer = require('nodemailer');
 const multer = require('multer')
 
 app.use(express.static('public'));
@@ -194,6 +195,22 @@ app.get('/login',function (req,res) {
 
 })
 
+// 根据用户id修改账户
+app.post('/changeAccount', function(req, res){
+    let sqlStr = sql.user.updateaccount;
+    let params = req.query;
+    conn.query(sqlStr,[params.account,params.password,params.pic,params.userid], (err, result) => {
+        if (err) {
+            res.json(err);
+        }else {
+            res.json({
+                mes:'修改成功',
+                status:true
+            })
+        }
+    });
+});
+
 // 验证码登陆
 app.post('/codelogin', function(req, res){
     let sqlStr = "select account from user where account = '"+req.query.account+"'"
@@ -326,7 +343,7 @@ app.post('/uploader', upload.single('file'), function (req, res, next) {
 app.post('/add', function(req, res){
     let sqlStr = sql.user.add;
     let params = req.query;
-    conn.query(sqlStr, [params.name,params.userid,params.state,params.thumb,params.date,params.address,params.describe], (err, result) => {
+    conn.query(sqlStr, [params.name,params.userid,params.email,params.thumb,params.date,params.address,params.describe], (err, result) => {
         if (err) {
             res.json(err);
         }else {
@@ -352,8 +369,53 @@ app.post('/delall', function(req, res){
         }
     });
 });
+// 邮件发送接口
+app.post('/sendemail', function(req, res){
+    let params = req.query;
+    let sqlStr = sql.user.emaillist;
+    //开启一个 SMTP 连接池
+    var transport = nodemailer.createTransport({
+        host : 'smtp.qq.com', //QQ邮箱的 smtp 服务器地址
+        secure : true, //使用 SSL 协议
+        secureConnection : false, //是否使用对 https 协议的安全连接
+        port : 465, //QQ邮件服务所占用的端口
+        auth : {
+            user : '2448081965@qq.com', //开启 smtp 服务的发件人邮箱，用于发送邮件给其他人
+            pass : 'smszgitonqkidjif' //SMTP 服务授权码
+        }
+    })
+    var mailOption = {
+        from : '2448081965@qq.com', //发件人
+        to : params.email, //收件人
+        subject : '憨憨公司', //标题
+        attachments: [{
+            filename: '受理决定书.pdf',
+            path: './public/img/1.pdf'
+        }
+        ]
+    }
+    conn.query(sqlStr,[params.userid],(err, result) => {
+        if (err) {
+            res.json(err);
+        }else {
+            res.json({
+                mes:'发送邮箱成功',
+                status:true
+            })
+            transport.sendMail(mailOption,function (err,res){
+                if(err){//执行错误
+                    console.log(err)
+                }
+
+                transport.close(); // 如果没用，则关闭连接池
+            })
+        }
+    });
+
+
+});
 
 app.listen(8888, () => {
-    console.log('Server running at http://192.168.1.104');
+    console.log('Server running at http://192.168.3.11');
 })
 

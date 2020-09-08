@@ -87,7 +87,7 @@ export default {
                 })
 
             }else {
-                console.log('账户信息')
+                this.$router.push('/icon');
             }
         },
 

@@ -29,8 +29,11 @@
                             ></el-date-picker>
                         </el-col>
                     </el-form-item>
-                    <el-form-item label="核身状态">
-                        <el-switch v-model="form.delivery"></el-switch>
+<!--                    <el-form-item label="邮箱">-->
+<!--                        <el-switch v-model="form.delivery"></el-switch>-->
+<!--                    </el-form-item>-->
+                    <el-form-item label="邮箱">
+                        <el-input v-model="form.email"></el-input>
                     </el-form-item>
                     <el-form-item label="个人描述">
                         <el-input type="textarea" rows="5" v-model="form.desc"></el-input>
@@ -107,7 +110,7 @@ export default {
                 // region: '',
                 date1: '',
                 // date2: '',
-                delivery: true,
+                email:'',
 
                 // type: ['步步高'],
                 // resource: '小天才',
@@ -133,17 +136,13 @@ export default {
         },
         onSubmit() {
             console.log(this.form)
-            if(this.form.delivery==true){
-                var state = '成功'
-            }else {
-                var state = '失败'
-            }
+
             add({
                 userid:this.userid,
                 date:this.form.date1,
                 name:this.form.name,
                 address:this.form.address,
-                state:state,
+                email:this.form.email,
                 thumb:this.form.imgsrc,
                 describe:this.form.desc
             }).then((res)=>{
