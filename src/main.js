@@ -11,6 +11,8 @@ import './components/common/directives';
 import 'babel-polyfill';
 import axios from 'axios'
 import global from './api/global.js'
+import plugins from './components/index.js'
+
 
 Vue.config.productionTip = false;
 Vue.prototype.axios = axios
@@ -24,6 +26,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 Vue.use(VueI18n);
 Vue.use(global)
+Vue.use(plugins)
 Vue.use(ElementUI, {
     size: 'small'
 });
